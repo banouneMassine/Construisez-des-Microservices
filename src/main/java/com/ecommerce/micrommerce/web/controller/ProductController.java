@@ -1,6 +1,7 @@
 package com.ecommerce.micrommerce.web.controller;
 
 import com.ecommerce.micrommerce.web.dao.ProductDao;
+import com.ecommerce.micrommerce.web.exceptions.ProduitGratuitException;
 import com.ecommerce.micrommerce.web.exceptions.ProduitIntrouvableException;
 import com.ecommerce.micrommerce.web.model.Product;
 import io.swagger.annotations.Api;
@@ -12,6 +13,7 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import javax.validation.Valid;
 import java.net.URI;
 import java.util.List;
+import java.util.ArrayList;
 
 @Api( "API pour les opérations CRUD sur les produits.")
 @RestController
@@ -54,6 +56,10 @@ public class ProductController {
 
     @PostMapping(value = "/Produits")
     public ResponseEntity<Product> ajouterProduit(@RequestBody @Valid Product product) {
+    	if(product.getPrix() == 0) 
+    	{
+    		 throw  new ProduitGratuitException("le prix de vente ne doit pas etre égal a 0"); 
+    	}
         Product productAdded = productDao.save(product);
         URI location = ServletUriComponentsBuilder
                 .fromCurrentRequest()
@@ -61,5 +67,25 @@ public class ProductController {
                 .buildAndExpand(productAdded.getId())
                 .toUri();
         return ResponseEntity.created(location).build();
+    }
+    
+    
+    
+    @GetMapping("/AdminProduits")
+    public List<String> calculerMargeProduit()
+    {
+    	List<String> diff = new ArrayList<String>();
+    	for(Product p : productDao.findAll())
+    	{
+    		diff.add(p.toString() + " : " + (p.getPrix()- p.getPrixAchat()));
+    	}
+    	
+    	 return diff;
+    }
+    
+    @GetMapping("/orderNom")
+    public List<Product> tri()
+    {
+    	 return productDao.findByOrderByNomAsc();
     }
 }
